@@ -1,0 +1,39 @@
+# PHP 依赖（Composer）
+vendor/
+composer.phar
+
+# 前端依赖与构建产物
+node_modules/
+/dist/
+/build/
+
+# ★ 环境配置 —— 里面通常有数据库账号密码
+#   一旦提交就是永久公开，删文件也删不掉历史，只能改密码重来
+.env
+.env.*
+!.env.example
+*.local.php
+config.local.php
+
+# 编辑器 / IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+
+# 操作系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# PHP / 运行时产物
+*.log
+cache/
+runtime/
+uploads/tmp/
+*.pid
+
+# 本地草稿（万一放进来了，也不会被提交）
+_wip/
+*.tmp
+*.bak
