@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>公告资讯</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="wrap">
+
+    <header class="page-head">
+      <h1>公告资讯</h1>
+      <a class="jump" href="admin.html">管理端</a>
+    </header>
+    <p class="sub" id="summary"></p>
+
+    <ul class="list" id="list"></ul>
+
+    <div class="pager">
+      <button id="prev">上一页</button>
+      <span id="info"></span>
+      <button id="next">下一页</button>
+    </div>
+
+  </div>
+
+  <script>
+    var page = 1;
+
+    async function load() {
+      var res  = await fetch('http://localhost:8000/api/articles?page=' + page);
+      var json = await res.json();
+
+      var ul = document.getElementById('list');
+      ul.innerHTML = '';
+
+      if (json.data.list.length === 0) {
+        var empty = document.createElement('li');
+        empty.className = 'empty';
+        empty.textContent = '暂无公告';
+        ul.appendChild(empty);
+      }
+
+      json.data.list.forEach(function (item) {
+        var li = document.createElement('li');
+        var a  = document.createElement('a');
+        a.href = 'detail.html?id=' + item.id;
+        a.textContent = item.title;
+        li.appendChild(a);
+        ul.appendChild(li);
+      });
+
+      var total = json.data.total;
+      var size  = json.data.size;
+      var pages = Math.ceil(total / size);
+
+      document.getElementById('summary').textContent = '共 ' + total + ' 条';
+      document.getElementById('info').textContent    = '第 ' + page + ' / ' + pages + ' 页';
+
+      document.getElementById('prev').disabled = (page <= 1);
+      document.getElementById('next').disabled = (page >= pages);
+    }
+
+    document.getElementById('prev').onclick = function () {
+      page = page - 1;
+      load();
+    };
+
+    document.getElementById('next').onclick = function () {
+      page = page + 1;
+      load();
+    };
+
+    load();
+  </script>
+
+</body>
+</html>

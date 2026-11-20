@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>公告详情</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="wrap">
+
+    <p class="back"><a href="index.html">← 返回列表</a></p>
+
+    <h1 id="title"></h1>
+    <p class="meta" id="meta"></p>
+    <div class="article-body" id="content"></div>
+
+  </div>
+
+  <script>
+    var id = new URLSearchParams(location.search).get('id');
+
+    async function load() {
+      var res  = await fetch('http://localhost:8000/api/articles/' + id);
+      var json = await res.json();
+
+      if (json.code !== 0) {
+        document.getElementById('title').textContent = '文章不存在';
+        document.getElementById('meta').textContent  = '该公告可能已被删除，或链接有误。';
+        return;
+      }
+
+      document.getElementById('title').textContent   = json.data.title;
+      document.getElementById('meta').textContent    = '发布于 ' + json.data.created_at;
+      document.getElementById('content').textContent = json.data.content;
+      document.title = json.data.title;
+    }
+
+    load();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>接口测试台</title>
+<style>
+  body { font-family: system-ui, "Microsoft YaHei", sans-serif; max-width: 640px; margin: 28px auto; padding: 0 16px; color: #2c2c2a; }
+  h3 { font-size: 16px; font-weight: 500; margin-bottom: 4px; }
+  p.tip { font-size: 12px; color: #888780; margin: 0 0 16px; }
+  label { display: block; margin: 12px 0 4px; font-size: 13px; color: #5f5e5a; }
+  input, textarea, select { width: 100%; box-sizing: border-box; padding: 7px 9px; font-size: 13px; border: 1px solid #d3d1c7; border-radius: 6px; font-family: ui-monospace, Menlo, Consolas, monospace; background: #fff; }
+  textarea { height: 110px; resize: vertical; }
+  .row { display: flex; gap: 10px; }
+  .row > div:first-child { width: 130px; flex: none; }
+  .row > div:last-child { flex: 1; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+  .presets button { font-size: 12px; padding: 5px 10px; border: 1px solid #d3d1c7; background: #f1efe8; color: #444441; border-radius: 20px; cursor: pointer; font-family: inherit; }
+  .presets button:hover { background: #e6f1fb; border-color: #185fa5; }
+  button.send { margin-top: 16px; padding: 9px 26px; font-size: 14px; border: 1px solid #185fa5; background: #e6f1fb; color: #042c53; border-radius: 6px; cursor: pointer; }
+  button.send:hover { background: #b5d4f4; }
+  pre { margin-top: 16px; padding: 12px; background: #f1efe8; border: 1px solid #d3d1c7; border-radius: 6px; font-size: 12px; white-space: pre-wrap; word-break: break-all; min-height: 70px; }
+</style>
+</head>
+<body>
+<h3>接口测试台</h3>
+<p class="tip">这个页面和后端同在 localhost:8000，属于同源，所以不会被浏览器拦。双击打开（file:///）就会跨域失败。</p>
+
+<div class="row">
+  <div>
+    <label>方法</label>
+    <select id="method">
+      <option>GET</option>
+      <option>POST</option>
+      <option>PUT</option>
+      <option>DELETE</option>
+    </select>
+  </div>
+  <div>
+    <label>路径</label>
+    <input id="path" value="/api/articles">
+  </div>
+</div>
+
+<label>请求体（只有 POST / PUT 用得上）</label>
+<textarea id="body">{"title": "测试标题", "content": "这是测试正文。", "status": 1}</textarea>
+
+<div class="presets">
+  <button onclick="preset('GET','/api/articles','')">列表 第1页</button>
+  <button onclick="preset('GET','/api/articles?page=3','')">列表 第3页</button>
+  <button onclick="preset('GET','/api/articles/1','')">详情 id=1</button>
+  <button onclick="preset('GET','/api/articles/13','')">详情 id=13（草稿）</button>
+  <button onclick="preset('POST','/api/articles','{\n  &quot;title&quot;: &quot;新公告&quot;,\n  &quot;content&quot;: &quot;正文内容&quot;,\n  &quot;status&quot;: 1\n}')">新增</button>
+  <button onclick="preset('PUT','/api/articles/1','{\n  &quot;title&quot;: &quot;改过的标题&quot;,\n  &quot;content&quot;: &quot;改过的正文&quot;,\n  &quot;status&quot;: 1\n}')">修改 id=1</button>
+  <button onclick="preset('DELETE','/api/articles/14','')">删除 id=14</button>
+</div>
+
+<button class="send" id="btn">发送请求</button>
+<pre id="out">结果显示在这里</pre>
+
+<script>
+function preset(method, path, body) {
+  document.getElementById('method').value = method;
+  document.getElementById('path').value = path;
+  document.getElementById('body').value = body;
+}
+
+document.getElementById('btn').onclick = async function () {
+  var method = document.getElementById('method').value;
+  var path   = document.getElementById('path').value.trim();
+  var raw    = document.getElementById('body').value.trim();
+  var out    = document.getElementById('out');
+  out.textContent = '请求中...';
+
+  var opt = { method: method };
+  if (method === 'POST' || method === 'PUT') {
+    opt.headers = { 'Content-Type': 'application/json' };
+    opt.body = raw;
+  }
+
+  try {
+    var res = await fetch(path, opt);
+    out.textContent = 'HTTP ' + res.status + '\n\n' + await res.text();
+  } catch (e) {
+    out.textContent = '请求失败：' + e.message;
+  }
+};
+</script>
+</body>
+</html>
