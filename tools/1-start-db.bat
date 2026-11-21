@@ -5,7 +5,7 @@ echo   notice-board  -  start MySQL
 echo ==========================================
 echo.
 
-netstat -ano | findstr ":3306 " >nul
+netstat -ano | findstr ":3306 " | findstr "LISTENING" >nul
 if not errorlevel 1 goto :already
 
 set MYSQL_HOME=D:\phpstudy_pro\Extensions\MySQL5.7.26

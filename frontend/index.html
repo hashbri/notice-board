@@ -27,50 +27,104 @@
   </div>
 
   <script>
-    var page = 1;
+    var PAGE_SIZE = 5;
 
-    async function load() {
-      var res  = await fetch('http://localhost:8000/api/articles?page=' + page);
-      var json = await res.json();
+    var page = parseInt(new URLSearchParams(location.search).get('page'), 10);
+    if (!page || page < 1) {
+      page = 1;
+    }
 
+    function showMessage(text) {
       var ul = document.getElementById('list');
       ul.innerHTML = '';
 
-      if (json.data.list.length === 0) {
-        var empty = document.createElement('li');
-        empty.className = 'empty';
-        empty.textContent = '暂无公告';
-        ul.appendChild(empty);
+      var li = document.createElement('li');
+      li.className = 'empty';
+      li.textContent = text;
+      ul.appendChild(li);
+    }
+
+    function lockPager() {
+      document.getElementById('info').textContent    = '';
+      document.getElementById('prev').disabled = true;
+      document.getElementById('next').disabled = true;
+    }
+
+    async function load() {
+      var ul = document.getElementById('list');
+
+      try {
+        var res = await fetch('http://localhost:8000/api/articles?page=' + page + '&size=' + PAGE_SIZE);
+
+        if (!res.ok) {
+          throw new Error('HTTP ' + res.status);
+        }
+
+        var json = await res.json();
+
+        if (json.code !== 0) {
+          throw new Error(json.message);
+        }
+
+        var list  = json.data.list;
+        var total = json.data.total;
+        var size  = json.data.size;
+        var pages = Math.max(1, Math.ceil(total / size));
+
+        ul.innerHTML = '';
+        document.getElementById('summary').textContent = '共 ' + total + ' 条';
+
+        if (list.length === 0) {
+          showMessage('暂无公告');
+          lockPager();
+          return;
+        }
+
+        list.forEach(function (item) {
+          var li = document.createElement('li');
+          var a  = document.createElement('a');
+          a.href = 'detail.html?id=' + item.id + '&from=' + page;
+
+          var t = document.createElement('span');
+          t.className = 'item-title';
+          t.textContent = item.title;
+
+          var d = document.createElement('span');
+          d.className = 'item-date';
+          d.textContent = item.created_at.slice(0, 10);
+
+          a.appendChild(t);
+          a.appendChild(d);
+          li.appendChild(a);
+          ul.appendChild(li);
+        });
+
+        document.getElementById('info').textContent = '第 ' + page + ' / ' + pages + ' 页';
+        document.getElementById('prev').disabled = (page <= 1);
+        document.getElementById('next').disabled = (page >= pages);
+
+      } catch (e) {
+        document.getElementById('summary').textContent = '';
+        showMessage('加载失败，无法连接后端。请确认后端服务已启动，然后刷新页面。');
+        lockPager();
       }
+    }
 
-      json.data.list.forEach(function (item) {
-        var li = document.createElement('li');
-        var a  = document.createElement('a');
-        a.href = 'detail.html?id=' + item.id;
-        a.textContent = item.title;
-        li.appendChild(a);
-        ul.appendChild(li);
-      });
-
-      var total = json.data.total;
-      var size  = json.data.size;
-      var pages = Math.ceil(total / size);
-
-      document.getElementById('summary').textContent = '共 ' + total + ' 条';
-      document.getElementById('info').textContent    = '第 ' + page + ' / ' + pages + ' 页';
-
-      document.getElementById('prev').disabled = (page <= 1);
-      document.getElementById('next').disabled = (page >= pages);
+    function go(target) {
+      page = target;
+      history.replaceState(null, '', 'index.html?page=' + page);
+      load();
+      window.scrollTo(0, 0);
     }
 
     document.getElementById('prev').onclick = function () {
-      page = page - 1;
-      load();
+      if (page > 1) {
+        go(page - 1);
+      }
     };
 
     document.getElementById('next').onclick = function () {
-      page = page + 1;
-      load();
+      go(page + 1);
     };
 
     load();

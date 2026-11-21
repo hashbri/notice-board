@@ -85,64 +85,79 @@
     }
 
     async function loadAdminList() {
-      var res  = await fetch('http://localhost:8000/api/admin/articles?page=' + adminPage + '&size=' + ADMIN_SIZE);
-      var json = await res.json();
-
-      var total      = json.data.total;
-      var totalPages = Math.max(1, Math.ceil(total / ADMIN_SIZE));
-
-      if (adminPage > totalPages) {
-        adminPage = totalPages;
-        return loadAdminList();
-      }
-
       var ul = document.getElementById('admin-list');
-      ul.innerHTML = '';
 
-      document.getElementById('info').textContent = '第 ' + adminPage + ' / ' + totalPages + ' 页 · 共 ' + total + ' 篇';
-      document.getElementById('prev').disabled = adminPage <= 1;
-      document.getElementById('next').disabled = adminPage >= totalPages;
+      try {
+        var res  = await fetch('http://localhost:8000/api/admin/articles?page=' + adminPage + '&size=' + ADMIN_SIZE);
+        var json = await res.json();
 
-      if (json.data.list.length === 0) {
-        var empty = document.createElement('li');
-        empty.className = 'empty';
-        empty.textContent = '还没有任何公告';
-        ul.appendChild(empty);
-        return;
-      }
+        var total      = json.data.total;
+        var totalPages = Math.max(1, Math.ceil(total / ADMIN_SIZE));
 
-      json.data.list.forEach(function (item) {
-        var li = document.createElement('li');
-
-        var main = document.createElement('span');
-        main.className = 'item-main';
-
-        var span = document.createElement('span');
-        span.className = 'item-title';
-        span.textContent = item.title;
-        main.appendChild(span);
-
-        if (item.status === 0) {
-          var tag = document.createElement('span');
-          tag.className = 'tag-draft';
-          tag.textContent = '草稿';
-          main.appendChild(tag);
+        if (adminPage > totalPages) {
+          adminPage = totalPages;
+          return loadAdminList();
         }
 
-        var btn = document.createElement('button');
-        btn.textContent = '编辑';
-        btn.onclick = function () { startEdit(item.id); };
+        ul.innerHTML = '';
 
-        var del = document.createElement('button');
-        del.className = 'danger';
-        del.textContent = '删除';
-        del.onclick = function () { remove(item.id); };
+        document.getElementById('info').textContent = '第 ' + adminPage + ' / ' + totalPages + ' 页 · 共 ' + total + ' 篇';
+        document.getElementById('prev').disabled = adminPage <= 1;
+        document.getElementById('next').disabled = adminPage >= totalPages;
 
-        li.appendChild(main);
-        li.appendChild(btn);
-        li.appendChild(del);
-        ul.appendChild(li);
-      });
+        if (json.data.list.length === 0) {
+          var empty = document.createElement('li');
+          empty.className = 'empty';
+          empty.textContent = '还没有任何公告';
+          ul.appendChild(empty);
+          return;
+        }
+
+        json.data.list.forEach(function (item) {
+          var li = document.createElement('li');
+
+          var main = document.createElement('span');
+          main.className = 'item-main';
+
+          var span = document.createElement('span');
+          span.className = 'item-title';
+          span.textContent = item.title;
+          main.appendChild(span);
+
+          if (item.status === 0) {
+            var tag = document.createElement('span');
+            tag.className = 'tag-draft';
+            tag.textContent = '草稿';
+            main.appendChild(tag);
+          }
+
+          var btn = document.createElement('button');
+          btn.textContent = '编辑';
+          btn.onclick = function () { startEdit(item.id); };
+
+          var del = document.createElement('button');
+          del.className = 'danger';
+          del.textContent = '删除';
+          del.onclick = function () { remove(item.id); };
+
+          li.appendChild(main);
+          li.appendChild(btn);
+          li.appendChild(del);
+          ul.appendChild(li);
+        });
+
+      } catch (e) {
+        ul.innerHTML = '';
+
+        var fail = document.createElement('li');
+        fail.className = 'empty';
+        fail.textContent = '加载失败，无法连接后端。请确认后端服务已启动，然后刷新页面。';
+        ul.appendChild(fail);
+
+        document.getElementById('info').textContent = '';
+        document.getElementById('prev').disabled = true;
+        document.getElementById('next').disabled = true;
+      }
     }
 
     async function remove(id) {
@@ -150,26 +165,32 @@
         return;
       }
 
-      var res  = await fetch('http://localhost:8000/api/admin/articles/' + id, {
-        method: 'DELETE'
-      });
-      var json = await res.json();
-
       var msg = document.getElementById('msg');
 
-      if (json.code === 0) {
-        msg.textContent = '已删除 #' + id;
+      try {
+        var res  = await fetch('http://localhost:8000/api/admin/articles/' + id, {
+          method: 'DELETE'
+        });
+        var json = await res.json();
 
-        if (editingId === id) {
-          resetForm();
+        if (json.code === 0) {
+          msg.textContent = '已删除 #' + id;
+
+          if (editingId === id) {
+            resetForm();
+          }
+          loadAdminList();
+        } else {
+          msg.textContent = '失败：' + json.message;
         }
-        loadAdminList();
-      } else {
-        msg.textContent = '失败：' + json.message;
+
+      } catch (e) {
+        msg.textContent = '删除失败：无法连接后端，请确认服务已启动。';
       }
     }
 
     document.getElementById('submit').onclick = async function () {
+      var btn = this;
       var msg = document.getElementById('msg');
 
       var body = {
@@ -195,25 +216,38 @@
         method = 'PUT';
       }
 
-      var res = await fetch(url, {
-        method:  method,
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(body)
-      });
+      btn.disabled    = true;
+      btn.textContent = '提交中…';
+      msg.textContent = '';
 
-      var json = await res.json();
+      try {
+        var res = await fetch(url, {
+          method:  method,
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(body)
+        });
 
-      if (json.code === 0) {
-        msg.textContent = (method === 'POST' ? '发布成功' : '修改成功') + '，id = ' + json.data.id;
+        var json = await res.json();
 
-        if (method === 'POST') {
-          adminPage = 1;
+        if (json.code === 0) {
+          msg.textContent = (method === 'POST' ? '发布成功' : '修改成功') + '，id = ' + json.data.id;
+
+          if (method === 'POST') {
+            adminPage = 1;
+          }
+
+          resetForm();
+          loadAdminList();
+        } else {
+          msg.textContent = '失败：' + json.message;
         }
 
-        resetForm();
-        loadAdminList();
-      } else {
-        msg.textContent = '失败：' + json.message;
+      } catch (e) {
+        msg.textContent = '提交失败：无法连接后端，请确认服务已启动。';
+
+      } finally {
+        btn.disabled    = false;
+        btn.textContent = '提交';
       }
     };
 

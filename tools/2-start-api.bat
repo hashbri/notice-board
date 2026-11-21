@@ -8,10 +8,10 @@ echo.
 cd /d "%~dp0..\backend"
 if errorlevel 1 goto :badcd
 
-netstat -ano | findstr ":8000 " >nul
+netstat -ano | findstr ":8000 " | findstr "LISTENING" >nul
 if not errorlevel 1 goto :portbusy
 
-netstat -ano | findstr ":3306 " >nul
+netstat -ano | findstr ":3306 " | findstr "LISTENING" >nul
 if errorlevel 1 (
     echo [WARN] Port 3306 is not listening. MySQL may not be running.
     echo        Start it first with 1-start-db.bat, or the API will

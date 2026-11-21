@@ -10,7 +10,7 @@
 
   <div class="wrap">
 
-    <p class="back"><a href="index.html">← 返回列表</a></p>
+    <p class="back"><a id="back-link" href="index.html">← 返回列表</a></p>
 
     <h1 id="title"></h1>
     <p class="meta" id="meta"></p>
@@ -19,22 +19,48 @@
   </div>
 
   <script>
-    var id = new URLSearchParams(location.search).get('id');
+    var params = new URLSearchParams(location.search);
+    var id     = params.get('id');
+    var from   = params.get('from');
+
+    if (from) {
+      document.getElementById('back-link').href = 'index.html?page=' + from;
+    }
+
+    function showError(titleText, metaText) {
+      document.getElementById('title').textContent   = titleText;
+      document.getElementById('meta').textContent    = metaText;
+      document.getElementById('content').textContent = '';
+    }
 
     async function load() {
-      var res  = await fetch('http://localhost:8000/api/articles/' + id);
-      var json = await res.json();
-
-      if (json.code !== 0) {
-        document.getElementById('title').textContent = '文章不存在';
-        document.getElementById('meta').textContent  = '该公告可能已被删除，或链接有误。';
+      if (!id) {
+        showError('缺少文章编号', '请从列表页点击公告标题进入。');
         return;
       }
 
-      document.getElementById('title').textContent   = json.data.title;
-      document.getElementById('meta').textContent    = '发布于 ' + json.data.created_at;
-      document.getElementById('content').textContent = json.data.content;
-      document.title = json.data.title;
+      try {
+        var res = await fetch('http://localhost:8000/api/articles/' + id);
+
+        if (!res.ok && res.status !== 404) {
+          throw new Error('HTTP ' + res.status);
+        }
+
+        var json = await res.json();
+
+        if (json.code !== 0) {
+          showError('文章不存在', '该公告可能已被删除，或链接有误。');
+          return;
+        }
+
+        document.getElementById('title').textContent   = json.data.title;
+        document.getElementById('meta').textContent    = '发布于 ' + json.data.created_at;
+        document.getElementById('content').textContent = json.data.content;
+        document.title = json.data.title;
+
+      } catch (e) {
+        showError('加载失败', '无法连接后端，请确认后端服务已启动，然后刷新页面。');
+      }
     }
 
     load();

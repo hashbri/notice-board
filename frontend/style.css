@@ -108,10 +108,26 @@ h2 {
 .list li:last-child { border-bottom: none; }
 
 .list a {
-  display: block;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
   color: var(--text);
   text-decoration: none;
   transition: color 0.15s;
+}
+
+.list a .item-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list .item-date {
+  flex: none;
+  font-size: 12px;
+  color: var(--text-2);
 }
 
 .list a:hover { color: var(--primary); }

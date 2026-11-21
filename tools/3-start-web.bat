@@ -8,7 +8,7 @@ echo.
 cd /d "%~dp0..\frontend"
 if errorlevel 1 goto :badcd
 
-netstat -ano | findstr ":5500 " >nul
+netstat -ano | findstr ":5500 " | findstr "LISTENING" >nul
 if not errorlevel 1 goto :portbusy
 
 set PHP_EXE=php
